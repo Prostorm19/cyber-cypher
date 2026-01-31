@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Fix input and textarea styling for better visibility */
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+  color: #1f2937 !important;
+  background-color: #ffffff !important;
+}
+
+/* Fix placeholder text visibility */
+input::placeholder,
+textarea::placeholder {
+  color: #9ca3af !important;
+  opacity: 1 !important;
+}
+
+/* Ensure select dropdowns are visible */
+select option {
+  color: #1f2937;
+  background-color: #ffffff;
+}
+
+/* Fix for dark mode */
+@media (prefers-color-scheme: dark) {
+  input[type="text"],
+  input[type="number"],
+  textarea,
+  select {
+    color: #f3f4f6 !important;
+    background-color: #1f2937 !important;
+    border-color: #4b5563 !important;
+  }
+  
+  input::placeholder,
+  textarea::placeholder {
+    color: #6b7280 !important;
+  }
+  
+  select option {
+    color: #f3f4f6;
+    background-color: #1f2937;
+  }
+}
