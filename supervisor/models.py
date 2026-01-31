@@ -1,0 +1,184 @@
+"""
+Data models for the Self-Healing Support Supervisor system.
+"""
+
+from datetime import datetime
+from enum import Enum
+from typing import Optional, List, Dict, Any
+from pydantic import BaseModel, Field
+
+
+class SignalType(str, Enum):
+    """Types of signals the system can observe."""
+    SUPPORT_TICKET = "support_ticket"
+    ERROR_LOG = "error_log"
+    MIGRATION_EVENT = "migration_event"
+    WEBHOOK_FAILURE = "webhook_failure"
+    API_ERROR = "api_error"
+    CHECKOUT_ISSUE = "checkout_issue"
+
+
+class MigrationStage(str, Enum):
+    """Migration stages for merchants."""
+    PRE_MIGRATION = "pre_migration"
+    MID_MIGRATION = "mid_migration"
+    POST_MIGRATION = "post_migration"
+    COMPLETED = "completed"
+
+
+class RiskLevel(str, Enum):
+    """Risk levels for actions."""
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+class ActionType(str, Enum):
+    """Types of actions the system can take."""
+    DRAFT_SUPPORT_RESPONSE = "draft_support_response"
+    ESCALATE_TO_ENGINEERING = "escalate_to_engineering"
+    ALERT_SUPPORT_TEAM = "alert_support_team"
+    SUGGEST_DOCUMENTATION = "suggest_documentation"
+    MONITOR_PATTERN = "monitor_pattern"
+    CREATE_INCIDENT_SUMMARY = "create_incident_summary"
+
+
+class Signal(BaseModel):
+    """Represents an observed system signal."""
+    id: str = Field(..., description="Unique identifier for the signal")
+    timestamp: datetime = Field(default_factory=lambda: datetime.now())
+    signal_type: str  # Changed from SignalType to str to accept any string
+    merchant_id: Optional[str] = None
+    migration_stage: Optional[str] = None  # Changed from MigrationStage to str
+    title: Optional[str] = None
+    description: str
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    severity: Optional[str] = None
+    category: Optional[str] = None
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "sig_123",
+                "signal_type": "support_ticket",
+                "merchant_id": "merch_456",
+                "migration_stage": "mid_migration",
+                "title": "Checkout not loading",
+                "description": "Customer reported checkout page shows blank screen",
+                "severity": "high",
+                "category": "checkout"
+            }
+        }
+
+
+class Pattern(BaseModel):
+    """Represents a detected pattern across multiple signals."""
+    id: str
+    pattern_type: str
+    affected_merchants: List[str]
+    signal_ids: List[str]
+    first_seen: datetime
+    last_seen: datetime
+    frequency: int
+    description: str
+    common_attributes: Dict[str, Any] = Field(default_factory=dict)
+
+
+class Hypothesis(BaseModel):
+    """Represents a hypothesis about a root cause."""
+    description: str
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    evidence: List[str]
+    affected_patterns: List[str] = Field(default_factory=list)
+    potential_causes: List[str] = Field(default_factory=list)
+    uncertainty_notes: Optional[str] = None
+
+
+class ProposedAction(BaseModel):
+    """Represents a proposed action."""
+    action_type: ActionType
+    description: str
+    target: Optional[str] = None  # e.g., merchant_id, ticket_id
+    parameters: Dict[str, Any] = Field(default_factory=dict)
+    expected_impact: str
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "action_type": "draft_support_response",
+                "description": "Draft response for checkout blank screen issue",
+                "target": "ticket_789",
+                "parameters": {"template": "checkout_troubleshooting"},
+                "expected_impact": "Provides immediate guidance to merchant"
+            }
+        }
+
+
+class AgentDecision(BaseModel):
+    """Represents the agent's decision output."""
+    observations: List[str]
+    hypothesis: Hypothesis
+    reasoning: str
+    proposed_actions: List[ProposedAction]
+    risk_level: RiskLevel
+    requires_human_approval: bool
+    explainability_notes: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "observations": [
+                    "3 merchants reported blank checkout screens in past 2 hours",
+                    "All affected merchants are in mid-migration stage",
+                    "Error logs show 'auth token invalid' errors"
+                ],
+                "hypothesis": {
+                    "description": "Migration scripts may have invalidated checkout auth tokens",
+                    "confidence": 0.82,
+                    "evidence": [
+                        "All merchants mid-migration",
+                        "Timing correlates with migration script execution",
+                        "Auth errors in logs"
+                    ],
+                    "potential_causes": [
+                        "Migration script bug",
+                        "Token refresh logic not triggered"
+                    ]
+                },
+                "reasoning": "Pattern detected across multiple merchants...",
+                "proposed_actions": [],
+                "risk_level": "medium",
+                "requires_human_approval": True,
+                "explainability_notes": "High confidence but requires approval due to checkout impact"
+            }
+        }
+
+
+class Incident(BaseModel):
+    """Represents a tracked incident."""
+    id: str
+    title: str
+    description: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    status: str  # open, investigating, resolved, closed
+    pattern_ids: List[str] = Field(default_factory=list)
+    signal_ids: List[str] = Field(default_factory=list)
+    decisions: List[AgentDecision] = Field(default_factory=list)
+    resolution: Optional[str] = None
+    resolved_at: Optional[datetime] = None
+    
+    
+class KnowledgeEntry(BaseModel):
+    """Represents a knowledge base entry for long-term memory."""
+    id: str
+    title: str
+    issue_pattern: str
+    root_cause: str
+    resolution: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    tags: List[str] = Field(default_factory=list)
+    related_incidents: List[str] = Field(default_factory=list)
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    times_validated: int = 0

@@ -1,0 +1,115 @@
+{
+  "observations": [
+    "Analyzed 5 signals from past 24 hours",
+    "5 unique merchants affected",
+    "Signal breakdown: 5 SignalType.SUPPORT_TICKET",
+    "Migration stages: 5 in MigrationStage.MID_MIGRATION"
+  ],
+  "hypothesis": {
+    "description": "Likely Migration stage-specific issue or Recent platform change or deployment affecting multiple merchants",
+    "confidence": 0.85,
+    "evidence": [
+      "5 similar signals detected across 5 merchants",
+      "5/5 affected merchants are in MigrationStage.MID_MIGRATION stage",
+      "All occurrences within 1.0 hour window",
+      "All issues relate to checkout functionality"
+    ],
+    "affected_patterns": [
+      "pattern_03f7b986",
+      "pattern_f9127369"
+    ],
+    "potential_causes": [
+      "Migration stage-specific issue",
+      "Recent platform change or deployment",
+      "Checkout component issue"
+    ],
+    "uncertainty_notes": "Multiple patterns detected (2), relationships unclear"
+  },
+  "reasoning": "Detected 2 pattern(s) across 5 signals. Primary pattern: 5 merchants experiencing checkout issues in MigrationStage.MID_MIGRATION stage Confidence level: 85% based on: 5 similar signals detected across 5 merchants; 5/5 affected merchants are in MigrationStage.MID_MIGRATION stage; All occurrences within 1.0 hour window Most likely cause: Migration stage-specific issue",
+  "proposed_actions": [
+    {
+      "action_type": "create_incident_summary",
+      "description": "Create detailed incident summary with pattern analysis",
+      "target": null,
+      "parameters": {
+        "pattern_ids": [
+          "pattern_03f7b986",
+          "pattern_f9127369"
+        ],
+        "signal_ids": [
+          "sig_checkout_0",
+          "sig_checkout_1",
+          "sig_checkout_2",
+          "sig_checkout_3",
+          "sig_checkout_4"
+        ],
+        "hypothesis": "Likely Migration stage-specific issue or Recent platform change or deployment affecting multiple merchants"
+      },
+      "expected_impact": "Provides documentation and visibility for teams"
+    },
+    {
+      "action_type": "alert_support_team",
+      "description": "Alert support team about pattern affecting 5 merchants",
+      "target": null,
+      "parameters": {
+        "priority": "high",
+        "affected_merchant_count": 5,
+        "pattern_description": "5 merchants experiencing checkout issues in MigrationStage.MID_MIGRATION stage"
+      },
+      "expected_impact": "Enables proactive support outreach"
+    },
+    {
+      "action_type": "draft_support_response",
+      "description": "Draft proactive support responses for affected merchants",
+      "target": "merchant_4,merchant_3,merchant_0,merchant_2,merchant_1",
+      "parameters": {
+        "issue_category": "checkout",
+        "hypothesis": "Likely Migration stage-specific issue or Recent platform change or deployment affecting multiple merchants",
+        "confidence": 0.85
+      },
+      "expected_impact": "Provides immediate guidance and reduces ticket volume"
+    },
+    {
+      "action_type": "escalate_to_engineering",
+      "description": "Escalate to engineering with evidence and analysis",
+      "target": null,
+      "parameters": {
+        "evidence": [
+          "5 similar signals detected across 5 merchants",
+          "5/5 affected merchants are in MigrationStage.MID_MIGRATION stage",
+          "All occurrences within 1.0 hour window",
+          "All issues relate to checkout functionality"
+        ],
+        "potential_causes": [
+          "Migration stage-specific issue",
+          "Recent platform change or deployment",
+          "Checkout component issue"
+        ],
+        "affected_merchants": [
+          "merchant_4",
+          "merchant_3",
+          "merchant_0",
+          "merchant_2",
+          "merchant_1"
+        ],
+        "urgency": "high"
+      },
+      "expected_impact": "Initiates root cause investigation and fix"
+    },
+    {
+      "action_type": "suggest_documentation",
+      "description": "Suggest documentation update to prevent future occurrences",
+      "target": null,
+      "parameters": {
+        "topic": "checkout",
+        "issue_pattern": "Likely Migration stage-specific issue or Recent platform change or deployment affecting multiple merchants",
+        "suggested_content": "Add troubleshooting guide for checkout issues during migration. Include common error: Migration stage-specific issue"
+      },
+      "expected_impact": "Reduces future support volume through better documentation"
+    }
+  ],
+  "risk_level": "high",
+  "requires_human_approval": true,
+  "explainability_notes": "High confidence due to strong pattern evidence and correlation. Risk assessed as HIGH due to checkout/payment involvement or large merchant impact. Human approval required due to: high risk level. Uncertainty: Multiple patterns detected (2), relationships unclear",
+  "timestamp": "2026-01-31 14:44:19.077448"
+}
