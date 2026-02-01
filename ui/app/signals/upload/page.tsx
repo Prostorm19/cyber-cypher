@@ -44,11 +44,11 @@ export default function SignalUploadPage() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const endpoint = file.name.endsWith('.csv') 
-        ? '/signals/upload/csv' 
+      const endpoint = file.name.endsWith('.csv')
+        ? '/signals/upload/csv'
         : '/signals/upload/json';
 
-      const response = await fetch(`http://localhost:8000${endpoint}`, {
+      const response = await fetch(`http://127.0.0.1:8000${endpoint}`, {
         method: 'POST',
         body: formData,
       });
@@ -71,7 +71,7 @@ export default function SignalUploadPage() {
     const csvContent = `timestamp,signal_type,merchant_id,migration_stage,description,severity,category
 2026-02-01T06:00:00Z,checkout_issue,merchant_001,mid_migration,Checkout page blank,high,checkout
 2026-02-01T06:05:00Z,error_log,merchant_002,mid_migration,Auth token invalid,high,checkout`;
-    
+
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -113,11 +113,10 @@ export default function SignalUploadPage() {
         {/* Upload Area */}
         <Card className="p-8">
           <div
-            className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
-              dragActive 
-                ? 'border-blue-500 bg-blue-50' 
+            className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${dragActive
+                ? 'border-blue-500 bg-blue-50'
                 : 'border-gray-300 bg-white hover:border-gray-400'
-            }`}
+              }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
             onDragOver={handleDrag}

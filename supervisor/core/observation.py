@@ -25,9 +25,7 @@ class ObservationEngine:
         
     def ingest_signal(self, signal: Signal) -> None:
         """Ingest a new signal into the system."""
-        # Ensure timestamp is timezone-naive for consistent comparison
-        if signal.timestamp.tzinfo is not None:
-            signal.timestamp = signal.timestamp.replace(tzinfo=None)
+        # Signal model validator ensures timestamp is timezone-naive
         self.signals[signal.id] = signal
         self._cleanup_old_signals()
         
@@ -46,10 +44,24 @@ class ObservationEngine:
         """Get recent signals with optional filtering."""
         cutoff = datetime.now() - timedelta(hours=hours)
         
+        print(f"\n[OBSERVATION DEBUG] get_recent_signals called")
+        print(f"[OBSERVATION DEBUG] Total signals in memory: {len(self.signals)}")
+        print(f"[OBSERVATION DEBUG] Cutoff time: {cutoff}")
+        print(f"[OBSERVATION DEBUG] Hours: {hours}")
+        
+        if len(self.signals) > 0:
+            # Show first signal for debugging
+            first_signal = list(self.signals.values())[0]
+            print(f"[OBSERVATION DEBUG] First signal timestamp: {first_signal.timestamp}")
+            print(f"[OBSERVATION DEBUG] First signal timestamp type: {type(first_signal.timestamp)}")
+            print(f"[OBSERVATION DEBUG] Comparison: {first_signal.timestamp} >= {cutoff} = {first_signal.timestamp >= cutoff}")
+        
         filtered = [
             s for s in self.signals.values()
             if s.timestamp >= cutoff
         ]
+        
+        print(f"[OBSERVATION DEBUG] Signals after time filter: {len(filtered)}")
         
         if signal_type:
             filtered = [s for s in filtered if s.signal_type == signal_type]
@@ -59,6 +71,8 @@ class ObservationEngine:
             
         if merchant_id:
             filtered = [s for s in filtered if s.merchant_id == merchant_id]
+        
+        print(f"[OBSERVATION DEBUG] Final filtered signals: {len(filtered)}\n")
         
         return sorted(filtered, key=lambda x: x.timestamp, reverse=True)
     

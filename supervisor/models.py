@@ -5,7 +5,7 @@ Data models for the Self-Healing Support Supervisor system.
 from datetime import datetime
 from enum import Enum
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class SignalType(str, Enum):
@@ -55,6 +55,32 @@ class Signal(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
     severity: Optional[str] = None
     category: Optional[str] = None
+    
+    @field_validator('timestamp', mode='before')
+    @classmethod
+    def validate_timestamp(cls, v):
+        """Ensure timestamp is a timezone-naive datetime object."""
+        if isinstance(v, str):
+            # Parse ISO format string to datetime
+            if v.endswith('Z'):
+                v = v[:-1] + '+00:00'
+            try:
+                dt = datetime.fromisoformat(v)
+            except ValueError:
+                # Fallback to current time if parsing fails
+                dt = datetime.now()
+            # Strip timezone info to make it naive
+            if dt.tzinfo is not None:
+                dt = dt.replace(tzinfo=None)
+            return dt
+        elif isinstance(v, datetime):
+            # If already a datetime, ensure it's timezone-naive
+            if v.tzinfo is not None:
+                return v.replace(tzinfo=None)
+            return v
+        else:
+            # Fallback to current time for any other type
+            return datetime.now()
     
     class Config:
         json_schema_extra = {

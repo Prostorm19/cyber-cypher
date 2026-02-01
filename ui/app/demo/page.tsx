@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Card, Button, LoadingSpinner, Alert } from '@/components/ui';
 
 interface Scenario {
@@ -21,7 +22,7 @@ export default function DemoPage() {
   // Load available scenarios on mount
   useState(() => {
     if (!loadedScenarios) {
-      fetch('http://localhost:8000/api/demo-scenarios')
+      fetch('http://127.0.0.1:8000/api/demo-scenarios')
         .then(res => res.json())
         .then(data => {
           setScenarios(data.scenarios || []);
@@ -37,7 +38,7 @@ export default function DemoPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:8000/api/load-demo-data?scenario=${scenario}`,
+        `http://127.0.0.1:8000/api/load-demo-data?scenario=${scenario}`,
         { method: 'POST' }
       );
 
@@ -72,13 +73,12 @@ export default function DemoPage() {
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold text-lg">{scenario.name}</h3>
                   <span
-                    className={`px-2 py-1 text-xs font-medium rounded ${
-                      scenario.severity === 'high'
-                        ? 'bg-red-100 text-red-800'
-                        : scenario.severity === 'medium'
+                    className={`px-2 py-1 text-xs font-medium rounded ${scenario.severity === 'high'
+                      ? 'bg-red-100 text-red-800'
+                      : scenario.severity === 'medium'
                         ? 'bg-yellow-100 text-yellow-800'
                         : 'bg-blue-100 text-blue-800'
-                    }`}
+                      }`}
                   >
                     {scenario.severity.toUpperCase()}
                   </span>
@@ -87,7 +87,7 @@ export default function DemoPage() {
                 <p className="text-xs text-gray-500 mb-3">
                   📊 {scenario.signal_count} signals
                 </p>
-                
+
                 <div className="mb-4">
                   <p className="text-xs font-medium text-gray-700 mb-1">Demonstrates:</p>
                   <ul className="text-xs text-gray-600 space-y-1">
@@ -128,7 +128,7 @@ export default function DemoPage() {
                 {result.status === 'success' ? '✅ Demo Data Loaded!' : '❌ Error'}
               </p>
               <p className="text-sm mb-3">{result.message}</p>
-              
+
               {result.status === 'success' && (
                 <div className="bg-white/50 p-4 rounded text-sm">
                   <p className="mb-2">
@@ -137,7 +137,7 @@ export default function DemoPage() {
                   <p className="mb-3">
                     <strong>Signals Loaded:</strong> {result.signals_loaded}
                   </p>
-                  
+
                   <div className="mb-3">
                     <p className="font-medium mb-2">Next Steps:</p>
                     <ol className="list-decimal ml-4 space-y-1">
@@ -148,18 +148,18 @@ export default function DemoPage() {
                   </div>
 
                   <div className="flex gap-3 mt-4">
-                    <a
+                    <Link
                       href="/signals"
                       className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
                     >
                       View Signals →
-                    </a>
-                    <a
+                    </Link>
+                    <Link
                       href="/agent"
                       className="inline-block px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm"
                     >
                       Run Analysis →
-                    </a>
+                    </Link>
                   </div>
                 </div>
               )}

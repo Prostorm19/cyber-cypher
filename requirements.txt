@@ -14,6 +14,9 @@ python-multipart>=0.0.9
 sqlalchemy>=2.0.0
 alembic>=1.13.0
 
+# Integrations
+PyGithub>=2.0.0
+
 # Data processing
 numpy>=1.26.0
 pandas>=2.2.0

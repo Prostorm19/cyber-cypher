@@ -243,8 +243,12 @@ class SupervisorAgent:
     
     def ingest_signal(self, signal: Signal) -> None:
         """Convenience method to ingest a single signal."""
+        print(f"[AGENT DEBUG] ingest_signal called for: {signal.id}")
         self.observation.ingest_signal(signal)
     
     def ingest_signals(self, signals: List[Signal]) -> None:
         """Convenience method to ingest multiple signals."""
+        print(f"[AGENT DEBUG] ingest_signals called. Count: {len(signals)}")
+        if signals:
+            print(f"[AGENT DEBUG] First signal sample: ID={signals[0].id}, Time={signals[0].timestamp}")
         self.observation.ingest_signals(signals)

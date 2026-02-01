@@ -214,6 +214,11 @@ async def load_demo_data(
     
     signals = scenarios[scenario]()
     
+    # Trace Agent ID to ensure it matches the server's global agent
+    print(f"[DEMO DEBUG] Loading scenario: {scenario}", flush=True)
+    print(f"[DEMO DEBUG] Using Agent ID: {id(agent)}", flush=True)
+    print(f"[DEMO DEBUG] Generated {len(signals)} signals", flush=True)
+    
     # Use the injected global agent instance
     agent.ingest_signals(signals)
     

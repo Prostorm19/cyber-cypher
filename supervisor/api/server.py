@@ -41,6 +41,7 @@ app.add_middleware(
 
 # Initialize agent and memory
 agent = SupervisorAgent()
+print(f"[SERVER STARTUP] Initialized Global Agent. ID: {id(agent)}", flush=True)
 memory = MemoryManager()
 
 

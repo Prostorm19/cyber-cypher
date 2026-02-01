@@ -17,7 +17,7 @@ export default function SignalsPage() {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    
+
     // New state for displaying signals
     const [signals, setSignals] = useState<Signal[]>([]);
     const [loadingSignals, setLoadingSignals] = useState(true);
@@ -31,11 +31,16 @@ export default function SignalsPage() {
 
     async function fetchSignals() {
         try {
+            console.log('[SIGNALS PAGE] Fetching signals with timeWindow:', timeWindow);
             setLoadingSignals(true);
             setSignalsError(null);
             const response = await api.getSignals({ hours: timeWindow });
+            console.log('[SIGNALS PAGE] API Response:', response);
+            console.log('[SIGNALS PAGE] Signals count:', response.signals?.length || 0);
+            console.log('[SIGNALS PAGE] Signals data:', response.signals);
             setSignals(response.signals || []);
         } catch (err) {
+            console.error('[SIGNALS PAGE] Error fetching signals:', err);
             setSignalsError(err instanceof Error ? err.message : 'Failed to fetch signals');
         } finally {
             setLoadingSignals(false);
@@ -72,7 +77,7 @@ export default function SignalsPage() {
                 title: '',
                 description: '',
             });
-            
+
             // Refresh signals list
             await fetchSignals();
         } catch (err) {
@@ -94,7 +99,7 @@ export default function SignalsPage() {
         const now = new Date();
         const diffMs = now.getTime() - date.getTime();
         const diffMins = Math.floor(diffMs / 60000);
-        
+
         if (diffMins < 60) {
             return `${diffMins}m ago`;
         } else if (diffMins < 1440) {
@@ -126,7 +131,7 @@ export default function SignalsPage() {
             )}
 
             {/* Recent Signals Display */}
-            <Card 
+            <Card
                 title={`Recent Signals (Last ${timeWindow}h)`}
                 action={
                     <div className="flex items-center gap-3">
@@ -162,7 +167,7 @@ export default function SignalsPage() {
                         <div className="text-sm text-gray-600 mb-4">
                             Showing {signals.length} signal{signals.length !== 1 ? 's' : ''}
                         </div>
-                        
+
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">

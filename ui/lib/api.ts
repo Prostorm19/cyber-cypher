@@ -7,7 +7,7 @@
 // TypeScript Types (matching backend Pydantic models)
 // ============================================================================
 
-export type SignalType = 
+export type SignalType =
   | 'support_ticket'
   | 'error_log'
   | 'migration_event'
@@ -15,7 +15,7 @@ export type SignalType =
   | 'api_error'
   | 'checkout_issue';
 
-export type MigrationStage = 
+export type MigrationStage =
   | 'pre_migration'
   | 'mid_migration'
   | 'post_migration'
@@ -23,7 +23,7 @@ export type MigrationStage =
 
 export type RiskLevel = 'low' | 'medium' | 'high';
 
-export type ActionType = 
+export type ActionType =
   | 'draft_support_response'
   | 'escalate_to_engineering'
   | 'alert_support_team'
@@ -130,7 +130,7 @@ export interface ActionResult {
 // API Client Configuration
 // ============================================================================
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
 class APIError extends Error {
   constructor(
@@ -148,7 +148,8 @@ async function fetchAPI<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+  console.log(`[API Client] Fetching: ${url}`);
+
   try {
     const response = await fetch(url, {
       ...options,
@@ -188,7 +189,7 @@ export const api = {
   // -------------------------
   // Signals
   // -------------------------
-  
+
   /**
    * Ingest new signals into the system
    */
@@ -218,7 +219,7 @@ export const api = {
     if (params?.hours) query.set('hours', params.hours.toString());
     if (params?.signal_type) query.set('signal_type', params.signal_type);
     if (params?.merchant_id) query.set('merchant_id', params.merchant_id);
-    
+
     const endpoint = `/signals/recent${query.toString() ? `?${query.toString()}` : ''}`;
     return fetchAPI(endpoint);
   },
@@ -226,7 +227,7 @@ export const api = {
   // -------------------------
   // Agent
   // -------------------------
-  
+
   /**
    * Run the agent analysis cycle
    */
@@ -261,7 +262,7 @@ export const api = {
   // -------------------------
   // Actions
   // -------------------------
-  
+
   /**
    * Execute an action with approval
    */
@@ -292,7 +293,7 @@ export const api = {
   // -------------------------
   // Incidents
   // -------------------------
-  
+
   /**
    * Get open incidents
    */
@@ -324,7 +325,7 @@ export const api = {
   // -------------------------
   // Knowledge Base
   // -------------------------
-  
+
   /**
    * Search knowledge base
    */
@@ -368,7 +369,7 @@ export const api = {
   // -------------------------
   // Health Check
   // -------------------------
-  
+
   /**
    * Check API health
    */
