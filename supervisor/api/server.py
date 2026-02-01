@@ -3,7 +3,7 @@ FastAPI server for the supervisor system.
 """
 
 from typing import List, Optional
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -13,6 +13,12 @@ from supervisor.models import (
 from supervisor.core.agent import SupervisorAgent
 from supervisor.memory.manager import MemoryManager
 from supervisor.config import settings
+from supervisor.api.ingestion import (
+    parse_csv_signals, parse_json_signals,
+    github_issue_to_signal, sentry_error_to_signal,
+    generic_webhook_to_signal, WebhookPayload
+)
+from supervisor.api import demo
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -20,6 +26,9 @@ app = FastAPI(
     description="Agentic AI system for proactive issue detection and resolution",
     version="0.1.0"
 )
+
+# Include demo router
+app.include_router(demo.router, prefix="/api", tags=["demo"])
 
 # CORS middleware
 app.add_middleware(
@@ -86,6 +95,136 @@ async def ingest_signals(signal_input: SignalInput):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to ingest signals: {str(e)}"
+        )
+
+
+@app.post("/signals/webhook", status_code=status.HTTP_201_CREATED)
+async def webhook_ingest(request: Request):
+    """
+    Webhook endpoint for external signal ingestion.
+    Supports GitHub issues, Sentry errors, and generic webhooks.
+    """
+    try:
+        body = await request.json()
+        signals = []
+        
+        # Detect webhook type and convert to signals
+        if 'issue' in body and 'repository' in body:
+            # GitHub issue webhook
+            signal = github_issue_to_signal(body['issue'])
+            signals.append(signal)
+        elif 'event' in body and 'sentry' in body.get('event', '').lower():
+            # Sentry error webhook
+            signal = sentry_error_to_signal(body.get('data', {}))
+            signals.append(signal)
+        elif 'signals' in body:
+            # Batch of signals
+            for sig_data in body['signals']:
+                signal = generic_webhook_to_signal(sig_data)
+                signals.append(signal)
+        else:
+            # Generic single signal
+            signal = generic_webhook_to_signal(body)
+            signals.append(signal)
+        
+        # Ingest signals
+        agent.ingest_signals(signals)
+        
+        return {
+            "status": "success",
+            "message": f"Webhook processed: ingested {len(signals)} signals",
+            "signal_ids": [s.id for s in signals],
+            "source": signals[0].metadata.get('source', 'unknown') if signals else 'unknown'
+        }
+    except Exception as e:
+        import traceback
+        print(f"ERROR in webhook ingestion: {type(e).__name__}: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Webhook processing failed: {str(e)}"
+        )
+
+
+@app.post("/signals/upload/csv", status_code=status.HTTP_201_CREATED)
+async def upload_csv(file: UploadFile = File(...)):
+    """Upload CSV file containing signals."""
+    try:
+        if not file.filename.endswith('.csv'):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="File must be a CSV file"
+            )
+        
+        content = await file.read()
+        content_str = content.decode('utf-8')
+        
+        signals = parse_csv_signals(content_str)
+        
+        if not signals:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No valid signals found in CSV file"
+            )
+        
+        agent.ingest_signals(signals)
+        
+        return {
+            "status": "success",
+            "message": f"CSV uploaded: ingested {len(signals)} signals",
+            "filename": file.filename,
+            "signal_ids": [s.id for s in signals]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        print(f"ERROR in CSV upload: {type(e).__name__}: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"CSV upload failed: {str(e)}"
+        )
+
+
+@app.post("/signals/upload/json", status_code=status.HTTP_201_CREATED)
+async def upload_json(file: UploadFile = File(...)):
+    """Upload JSON file containing signals."""
+    try:
+        if not file.filename.endswith('.json'):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="File must be a JSON file"
+            )
+        
+        content = await file.read()
+        content_str = content.decode('utf-8')
+        
+        signals = parse_json_signals(content_str)
+        
+        if not signals:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No valid signals found in JSON file"
+            )
+        
+        agent.ingest_signals(signals)
+        
+        return {
+            "status": "success",
+            "message": f"JSON uploaded: ingested {len(signals)} signals",
+            "filename": file.filename,
+            "signal_ids": [s.id for s in signals]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        print(f"ERROR in JSON upload: {type(e).__name__}: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"JSON upload failed: {str(e)}"
         )
 
 

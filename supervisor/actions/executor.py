@@ -9,6 +9,7 @@ import json
 from supervisor.models import (
     ProposedAction, ActionType, Signal, Pattern
 )
+from supervisor.integrations import GitHubClient, SlackClient
 
 
 class ActionExecutor:
@@ -24,6 +25,10 @@ class ActionExecutor:
     """
     
     def __init__(self):
+        # Initialize integration clients
+        self.github = GitHubClient()
+        self.slack = SlackClient()
+        
         # Registry of action handlers
         self.action_handlers: Dict[ActionType, Callable] = {
             ActionType.DRAFT_SUPPORT_RESPONSE: self._draft_support_response,
@@ -108,41 +113,77 @@ class ActionExecutor:
         }
     
     def _escalate_to_engineering(self, action: ProposedAction) -> Dict[str, Any]:
-        """Create an engineering escalation (simulated)."""
-        escalation = {
-            "title": "Migration Issue Escalation",
-            "evidence": action.parameters.get("evidence", []),
-            "potential_causes": action.parameters.get("potential_causes", []),
-            "affected_merchants": action.parameters.get("affected_merchants", []),
-            "urgency": action.parameters.get("urgency", "medium"),
-            "created_at": datetime.utcnow().isoformat()
-        }
-        
-        # In production, this would create a ticket in engineering system
+        """Create a real GitHub issue for engineering escalation."""
         escalation_id = f"ESC-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        
+        # Get details from action parameters
+        hypothesis = action.parameters.get('hypothesis', 'Unknown issue')
+        evidence = action.parameters.get('evidence', [])
+        affected_merchants = action.parameters.get('affected_merchants', [])
+        potential_causes = action.parameters.get('potential_causes', [])
+        confidence = action.parameters.get('confidence', 0.0)
+        
+        # Format GitHub issue
+        title = f"[ESCALATION] {hypothesis[:80]}"
+        body = self.github.format_escalation_body(
+            hypothesis=hypothesis,
+            evidence=evidence,
+            affected_merchants=affected_merchants,
+            potential_causes=potential_causes,
+            confidence=confidence
+        )
+        
+        # Create GitHub issue
+        github_result = self.github.create_issue(
+            title=title,
+            body=body,
+            labels=["escalation", "migration", "auto-generated"]
+        )
+        
+        # Send Slack notification
+        slack_result = {"status": "disabled"}
+        if github_result.get('status') == 'success':
+            slack_result = self.slack.send_escalation_notification(
+                hypothesis=hypothesis,
+                confidence=confidence,
+                affected_merchants_count=len(affected_merchants),
+                github_issue_url=github_result.get('issue_url')
+            )
         
         return {
             "status": "completed",
             "action_type": action.action_type,
             "escalation_id": escalation_id,
-            "escalation": escalation,
-            "message": f"Escalation {escalation_id} created successfully"
+            "github": github_result,
+            "slack": slack_result,
+            "message": f"Escalation created: {github_result.get('issue_url', 'GitHub disabled')}"
         }
     
     def _alert_support_team(self, action: ProposedAction) -> Dict[str, Any]:
-        """Send alert to support team (simulated)."""
-        alert = {
-            "priority": action.parameters.get("priority", "medium"),
-            "affected_merchant_count": action.parameters.get("affected_merchant_count", 0),
-            "pattern_description": action.parameters.get("pattern_description", ""),
-            "timestamp": datetime.utcnow().isoformat()
-        }
+        """Send real Slack alert to support team."""
+        alert_id = f"ALERT-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        
+        priority = action.parameters.get('priority', 'medium')
+        affected_count = action.parameters.get('affected_merchant_count', 0)
+        pattern_desc = action.parameters.get('pattern_description', '')
+        
+        # Send real Slack alert
+        slack_result = self.slack.send_alert(
+            priority=priority,
+            message=action.description,
+            details={
+                "Affected Merchants": str(affected_count),
+                "Pattern": pattern_desc,
+                "Alert ID": alert_id
+            }
+        )
         
         return {
             "status": "completed",
             "action_type": action.action_type,
-            "alert": alert,
-            "message": f"Support team alert sent (priority: {alert['priority']})"
+            "alert_id": alert_id,
+            "slack": slack_result,
+            "message": f"Support team alerted via Slack (priority: {priority})"
         }
     
     def _suggest_documentation(self, action: ProposedAction) -> Dict[str, Any]:

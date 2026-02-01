@@ -8,7 +8,7 @@ and shows how the agent detects patterns and recommends actions.
 import json
 from datetime import datetime, timedelta
 from rich.console import Console
-from rich. panel import Panel
+from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.table import Table
 
@@ -97,7 +97,7 @@ def print_signals(signals: list[Signal]) -> None:
     for signal in signals[:10]:  # Show first 10
         table.add_row(
             signal.id,
-            signal.signal_type.value,
+            signal.signal_type if isinstance(signal.signal_type, str) else signal.signal_type.value,
             signal.merchant_id or "N/A",
             signal.category or "N/A",
             signal.description[:40] + "..." if len(signal.description) > 40 else signal.description
@@ -139,7 +139,8 @@ def print_decision(decision) -> None:
     # Proposed Actions
     actions_text = ""
     for i, action in enumerate(decision.proposed_actions):
-        actions_text += f"\n[bold]{i+1}. {action.action_type.value}[/bold]\n"
+        action_type = action.action_type if isinstance(action.action_type, str) else action.action_type.value
+        actions_text += f"\n[bold]{i+1}. {action_type}[/bold]\n"
         actions_text += f"   {action.description}\n"
         actions_text += f"   [dim]Impact: {action.expected_impact}[/dim]\n"
     
@@ -150,14 +151,15 @@ def print_decision(decision) -> None:
     ))
     
     # Risk & Approval
+    risk_level = decision.risk_level if isinstance(decision.risk_level, str) else decision.risk_level.value
     risk_color = {
         "low": "green",
         "medium": "yellow",
         "high": "red"
-    }.get(decision.risk_level.value, "white")
+    }.get(risk_level, "white")
     
     console.print(Panel(
-        f"[{risk_color}]Risk Level: {decision.risk_level.value.upper()}[/{risk_color}]\n"
+        f"[{risk_color}]Risk Level: {risk_level.upper()}[/{risk_color}]\n"
         f"Requires Human Approval: {'✓ YES' if decision.requires_human_approval else '✗ NO'}",
         title="⚠️  RISK ASSESSMENT",
         border_style=risk_color

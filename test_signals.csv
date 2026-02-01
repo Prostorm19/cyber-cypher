@@ -1,0 +1,11 @@
+timestamp,signal_type,merchant_id,migration_stage,description,severity,category
+2026-02-01T06:00:00Z,checkout_issue,merchant_001,mid_migration,Checkout page is completely blank after migration,high,checkout
+2026-02-01T06:05:00Z,checkout_issue,merchant_002,mid_migration,Customers cannot complete checkout - blank page,high,checkout
+2026-02-01T06:10:00Z,error_log,merchant_001,mid_migration,Auth token invalid - checkout authentication failed,high,checkout
+2026-02-01T06:12:00Z,error_log,merchant_002,mid_migration,Authentication token expired on checkout,high,checkout
+2026-02-01T06:15:00Z,checkout_issue,merchant_003,mid_migration,Checkout not loading after headless migration,high,checkout
+2026-02-01T06:20:00Z,api_error,merchant_003,mid_migration,API error: invalid authentication token,high,checkout
+2026-02-01T06:25:00Z,support_ticket,merchant_004,mid_migration,Multiple customers reporting checkout issues,high,checkout
+2026-02-01T06:30:00Z,support_ticket,merchant_099,pre_migration,When will my migration be scheduled?,low,general
+2026-02-01T06:35:00Z,webhook_failure,merchant_005,post_migration,Order webhook not receiving events,medium,webhook
+2026-02-01T06:40:00Z,api_error,merchant_005,post_migration,Webhook endpoint returning 401 unauthorized,medium,webhook

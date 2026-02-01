@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api, Signal } from '@/lib/api';
-import { Card, Button, Alert } from '@/components/ui';
+import { Card, Button, Alert, LoadingSpinner, Badge } from '@/components/ui';
 
 export default function SignalsPage() {
     const [formData, setFormData] = useState({
@@ -17,6 +17,30 @@ export default function SignalsPage() {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    
+    // New state for displaying signals
+    const [signals, setSignals] = useState<Signal[]>([]);
+    const [loadingSignals, setLoadingSignals] = useState(true);
+    const [signalsError, setSignalsError] = useState<string | null>(null);
+    const [timeWindow, setTimeWindow] = useState(24);
+
+    // Fetch signals on mount and when timeWindow changes
+    useEffect(() => {
+        fetchSignals();
+    }, [timeWindow]);
+
+    async function fetchSignals() {
+        try {
+            setLoadingSignals(true);
+            setSignalsError(null);
+            const response = await api.getSignals({ hours: timeWindow });
+            setSignals(response.signals || []);
+        } catch (err) {
+            setSignalsError(err instanceof Error ? err.message : 'Failed to fetch signals');
+        } finally {
+            setLoadingSignals(false);
+        }
+    }
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -48,10 +72,35 @@ export default function SignalsPage() {
                 title: '',
                 description: '',
             });
+            
+            // Refresh signals list
+            await fetchSignals();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to ingest signal');
         } finally {
             setLoading(false);
+        }
+    }
+
+    function getSeverityVariant(severity?: string): 'low' | 'medium' | 'high' | 'info' {
+        if (severity === 'high' || severity === 'critical') return 'high';
+        if (severity === 'medium') return 'medium';
+        if (severity === 'low') return 'low';
+        return 'info';
+    }
+
+    function formatTimestamp(timestamp: string): string {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        
+        if (diffMins < 60) {
+            return `${diffMins}m ago`;
+        } else if (diffMins < 1440) {
+            return `${Math.floor(diffMins / 60)}h ago`;
+        } else {
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
         }
     }
 
@@ -76,6 +125,91 @@ export default function SignalsPage() {
                 </Alert>
             )}
 
+            {/* Recent Signals Display */}
+            <Card 
+                title={`Recent Signals (Last ${timeWindow}h)`}
+                action={
+                    <div className="flex items-center gap-3">
+                        <select
+                            value={timeWindow}
+                            onChange={(e) => setTimeWindow(Number(e.target.value))}
+                            className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                            <option value={1}>1 hour</option>
+                            <option value={6}>6 hours</option>
+                            <option value={24}>24 hours</option>
+                            <option value={72}>3 days</option>
+                        </select>
+                        <Button variant="secondary" size="sm" onClick={fetchSignals}>
+                            Refresh
+                        </Button>
+                    </div>
+                }
+            >
+                {loadingSignals ? (
+                    <LoadingSpinner />
+                ) : signalsError ? (
+                    <Alert variant="error">
+                        {signalsError}
+                    </Alert>
+                ) : signals.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                        <p className="text-lg mb-2">No signals ingested in the last {timeWindow} hours</p>
+                        <p className="text-sm">Submit a signal below or load demo data from the <a href="/demo" className="text-blue-600 hover:underline">Demo page</a></p>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        <div className="text-sm text-gray-600 mb-4">
+                            Showing {signals.length} signal{signals.length !== 1 ? 's' : ''}
+                        </div>
+                        
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Merchant</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Severity</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {signals.map((signal, idx) => (
+                                        <tr key={signal.id || idx} className="hover:bg-gray-50">
+                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                                {formatTimestamp(signal.timestamp)}
+                                            </td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-sm">
+                                                <span className="text-gray-700 capitalize">
+                                                    {signal.signal_type?.replace('_', ' ')}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-sm font-mono text-gray-900">
+                                                {signal.merchant_id || '-'}
+                                            </td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-sm">
+                                                <Badge variant={getSeverityVariant(signal.severity)}>
+                                                    {signal.severity?.toUpperCase() || 'UNKNOWN'}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 capitalize">
+                                                {signal.category || '-'}
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-gray-700 max-w-md truncate" title={signal.description}>
+                                                {signal.title || signal.description}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+            </Card>
+
+            {/* Signal Submission Form */}
             <Card title="Submit New Signal">
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

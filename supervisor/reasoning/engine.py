@@ -11,6 +11,7 @@ from supervisor.models import (
     Signal, Pattern, Hypothesis, MigrationStage, SignalType
 )
 from supervisor.core.observation import ObservationEngine
+from supervisor.reasoning.llm_reasoner import LLMReasoner
 
 
 class ReasoningEngine:
@@ -22,6 +23,9 @@ class ReasoningEngine:
     def __init__(self, observation_engine: ObservationEngine):
         self.observation = observation_engine
         self.detected_patterns: Dict[str, Pattern] = {}
+        
+        # Initialize LLM reasoner for AI-powered analysis
+        self.llm_reasoner = LLMReasoner()
         
     def detect_patterns(
         self,
@@ -201,11 +205,27 @@ class ReasoningEngine:
         """
         Formulate a hypothesis about root cause based on patterns.
         
-        This is a rule-based implementation. In production, this could
-        use LLM-based reasoning for more sophisticated analysis.
+        Uses LLM when available, falls back to rule-based reasoning.
         """
         if not patterns:
             return None
+        
+        # Try LLM-powered reasoning first
+        if self.llm_reasoner.is_enabled():
+            try:
+                llm_hypothesis = self.llm_reasoner.generate_hypothesis(
+                    signals=signals,
+                    detected_patterns=patterns
+                )
+                
+                if llm_hypothesis:
+                    print("✨ Using LLM-powered hypothesis generation")
+                    return llm_hypothesis
+            except Exception as e:
+                print(f"⚠️  LLM hypothesis generation failed: {e}")
+        
+        # Fallback to rule-based reasoning
+        print("📊 Using rule-based hypothesis generation")
         
         # Analyze the most significant pattern
         primary_pattern = max(patterns, key=lambda p: p.frequency)
